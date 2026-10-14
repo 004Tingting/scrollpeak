@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrollpeak · 示例</title>
+<link rel="stylesheet" href="demo.css">
+<style>
+  .cards { display: grid; gap: 14px; margin: 26px 0 0; }
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card p { margin: 0; font-size: 13px; color: var(--muted); }
+  .card code { font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="bar-top">
+  <button id="btnTheme">切换明暗</button>
+</div>
+
+<div class="wrap">
+  <h1>Scrollpeak 示例</h1>
+  <p class="meta">零依赖的右侧单峰滑动指示条 · v1.0.0</p>
+
+  <div class="cards">
+    <a class="card" href="plain.html">
+      <h3>未处理版 · plain</h3>
+      <p>峰值只靠长度表达，不加粗不描边。最克制的一版。</p>
+    </a>
+    <a class="card" href="bold.html">
+      <h3>已处理版 · bold</h3>
+      <p>峰值加粗 + 描边，定位更醒目。页内可一键切回 plain 对比。</p>
+    </a>
+    <a class="card" href="playground.html">
+      <h3>参数实验台 · playground</h3>
+      <p>所有可调参数都在左侧实时可改，改完直接复制 JSON。</p>
+    </a>
+    <a class="card" href="single-file.html">
+      <h3>单文件版 · single-file</h3>
+      <p>组件、样式、演示页全部内联，双击即可打开，不依赖任何外部文件。</p>
+    </a>
+  </div>
+
+  <p class="meta" style="margin-top:28px">
+    把指针移到页面最右侧的滑条上试试；离开滑条后，峰值会回到跟随滚动进度。
+  </p>
+</div>
+
+<script>
+  document.getElementById('btnTheme').addEventListener('click', function () {
+    var root = document.documentElement;
+    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+</script>
+</body>
+</html>

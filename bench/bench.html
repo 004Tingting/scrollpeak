@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>scrollpeak bench</title>
+<style>
+  html,body{margin:0;background:#f6f7f9;color:#1b1f27;
+    font:14px/1.7 system-ui,"Microsoft YaHei",sans-serif}
+  main{max-width:680px;margin:0 auto;padding:40px 24px 240px}
+  section{padding:18px 0;border-top:1px solid #e3e6ea}
+  h2{margin:0 0 8px;font-size:17px}
+  #out{position:fixed;left:12px;bottom:12px;background:#fff;border:1px solid #e3e6ea;
+    border-radius:10px;padding:10px 12px;font:12px/1.6 Consolas,monospace;white-space:pre;z-index:9}
+</style>
+</head>
+<body>
+<main data-rail data-scrollpeak id="box"></main>
+<div id="out">running…</div>
+
+<script>
+/* ============================================================
+   1. 指标埋点 —— 必须在被测实现加载之前装好
+   ============================================================ */
+window.__m = { writes: 0, rects: 0, gcs: 0, cbTime: 0, cbCount: 0 };
+
+window.addEventListener('error', (e) => {
+  fetch('/__result', {
+    method: 'POST',
+    body: JSON.stringify({ error: String(e.message), where: e.filename + ':' + e.lineno })
+  });
+});
+
+(function () {
+  /* Chrome 128+ 把 camelCase 属性做成了每个 style 实例上的「命名属性」，
+     原型上没有访问器可拦截，所以改用 MutationObserver 数 style 属性的实际写入。
+     实测：同一元素连写 10 次 transform → 收到 10 条记录，不会合并。 */
+  const mo = new MutationObserver((list) => { window.__m.writes += list.length; });
+  mo.observe(document.body, { attributes: true, attributeFilter: ['style'], subtree: true });
+  window.__flushWrites = () => { window.__m.writes += mo.takeRecords().length; };
+
+  const gb = Element.prototype.getBoundingClientRect;
+  Element.prototype.getBoundingClientRect = function () {
+    window.__m.rects++; return gb.apply(this, arguments);
+  };
+
+  const gcs = window.getComputedStyle;
+  window.getComputedStyle = function () {
+    window.__m.gcs++; return gcs.apply(this, arguments);
+  };
+
+  /* 用原始 rAF 给驱动脚本自己用，避免把自己的回调算进实现的开销 */
+  const raf = window.requestAnimationFrame.bind(window);
+  window.__origRAF = raf;
+  window.requestAnimationFrame = function (cb) {
+    return raf(function (ts) {
+      const t0 = performance.now();
+      try { cb(ts); } finally {
+        window.__m.cbTime += performance.now() - t0;
+        window.__m.cbCount++;
+      }
+    });
+  };
+})();
+
+/* ============================================================
+   2. 造内容
+   ============================================================ */
+const Q = new URLSearchParams(location.search);
+const IMPL = Q.get('impl') || 'new';
+const N = +(Q.get('n') || 200);
+const FRAMES = +(Q.get('frames') || 180);
+
+(function build() {
+  const box = document.getElementById('box');
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < N; i++) {
+    const s = document.createElement('section');
+    const h = document.createElement('h2');
+    h.textContent = '第 ' + (i + 1) + ' 节 · 标题占位文本';
+    const p = document.createElement('p');
+    p.textContent = '正文占位。'.repeat(6);
+    s.appendChild(h); s.appendChild(p);
+    frag.appendChild(s);
+  }
+  box.appendChild(frag);
+})();
+
+/* ============================================================
+   3. 工具
+   ============================================================ */
+const M = window.__m;
+const snap = () => {
+  window.__flushWrites();
+  return { writes: M.writes, rects: M.rects, gcs: M.gcs, cbTime: M.cbTime, cbCount: M.cbCount };
+};
+const delta = (a, b) => ({
+  writes: b.writes - a.writes,
+  rects: b.rects - a.rects,
+  gcs: b.gcs - a.gcs,
+  cbTimeMs: +(b.cbTime - a.cbTime).toFixed(2),
+  frames: b.cbCount - a.cbCount
+});
+const frame = () => new Promise((r) => window.__origRAF(() => r()));
+const frames = async (n) => { for (let i = 0; i < n; i++) await frame(); };
+const railOf = () => document.querySelector('.sp-rail, .cxr-rail');
+
+/* ============================================================
+   4. 载入被测实现并跑场景
+   ============================================================ */
+const src = IMPL === 'old'
+  ? '/bench/baseline-legacy.js'
+  : '/dist/scrollpeak.min.js';
+
+const script = document.createElement('script');
+script.src = src;
+script.onload = async () => {
+  const beforeInit = window.__initBefore;
+  if (IMPL === 'new') {
+    window.__sp = Scrollpeak.init({ container: '#box' });
+  }
+  const afterInit = snap();
+  const init = delta(beforeInit, afterInit);
+
+  await frames(3);
+
+  /* 静态指标 */
+  const rail = railOf();
+  const all = [rail, ...rail.querySelectorAll('*')];
+  const gcsBefore = M.gcs;
+  const layers = all.filter((el) => {
+    const w = getComputedStyle(el).willChange;
+    return w && w !== 'auto' && w !== 'normal';
+  }).length;
+  M.gcs = gcsBefore; // 统计用掉的 getComputedStyle 不计入实现开销
+  const nodes = rail.querySelectorAll('*').length;
+  const styleTags = document.querySelectorAll('style').length;
+
+  /* 场景 A：连续扫过整条轨道 */
+  const sweep = await scenario('sweep', (i, h) => Math.sin(i / 18) * (h / 2 - 30));
+  /* 场景 B：指针停在一点附近做 ±1.2px 抖动（必须逐帧交替，否则连续同值会
+     被新实现的「坐标未变就早退」优化跳过，两边不可比） */
+  const jitter = await scenario('jitter', (i) => (i % 2 ? 1.2 : -1.2));
+
+  const result = {
+    impl: IMPL, n: N, frames: FRAMES,
+    init, sweep, jitter,
+    static: { layers, nodes, styleTags }
+  };
+  document.getElementById('out').textContent = JSON.stringify(result, null, 1);
+  await fetch('/__result', { method: 'POST', body: JSON.stringify(result) });
+};
+
+async function scenario(name, moveFn) {
+  const rail = railOf();
+  const rr = rail.getBoundingClientRect();   // 先量，避免算进被测区间
+  const cy = rr.top + rr.height / 2;
+  const h = rr.height;
+
+  /* 预热：先进入触发态并让强度 t 收敛，这段不计入统计，
+     否则「全量重绘」的过渡帧会盖住稳态表现。 */
+  rail.dispatchEvent(new PointerEvent('pointerenter', { bubbles: true, clientX: rr.right - 20, clientY: cy }));
+  await frames(50);
+
+  const a = snap();
+  for (let i = 0; i < FRAMES; i++) {
+    rail.dispatchEvent(new PointerEvent('pointermove', {
+      bubbles: true, clientX: rr.right - 20, clientY: cy + moveFn(i, h)
+    }));
+    await frame();
+  }
+  const b = snap();
+
+  rail.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true, clientX: rr.right - 20, clientY: cy }));
+  await frames(90);                          // 让它彻底收敛停机
+
+  const d = delta(a, b);
+  d.name = name;
+  return d;
+}
+
+window.__initBefore = snap();
+document.head.appendChild(script);
+</script>
+</body>
+</html>

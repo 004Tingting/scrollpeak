@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrollpeak · 已处理版（bold）</title>
+<link rel="stylesheet" href="demo.css">
+</head>
+<body>
+
+<div class="bar-top">
+  <a href="index.html">← 全部示例</a>
+  <button id="btnTheme">切换明暗</button>
+  <button id="btnPreset">切到未处理版</button>
+</div>
+
+<div class="wrap">
+  <h1>Scrollpeak · 已处理版</h1>
+  <p class="meta">峰值额外加粗并描一圈细边，扫一眼就能定位。适合条目多、需要快速定位的目录页。</p>
+
+  <p class="note">
+    初始化参数：<code>Scrollpeak.init({ peakStyle: 'bold' })</code><br>
+    bold 预设 = <code>peakGain: 5</code> · <code>peakGainY: 1.2</code> · <code>sigma: 1.6</code> · <code>peakRing: true</code><br>
+    对照页：<b><a href="plain.html">未处理版（plain）</a></b> ·
+    <b><a href="playground.html">参数实验台</a></b>
+  </p>
+
+  <main data-scrollpeak>
+    <section>
+      <h2>「已处理」处理了什么</h2>
+      <p>峰值条在横向放大的同时纵向也加粗，从一根细线变成一颗饱满的胶囊。</p>
+      <p>再加一圈 1px 描边，与背景形成明确边界，深色页面上尤其明显。</p>
+    </section>
+
+    <section>
+      <h2>加粗：纯 transform，零额外成本</h2>
+      <p>纵向加粗由 <code>scaleY</code> 完成，和横向的 <code>scaleX</code> 写在同一条 transform 里。</p>
+      <p>不改变元素尺寸，因此不触发重排，也不增加每帧的样式写入次数。</p>
+    </section>
+
+    <section>
+      <h2>描边：一个覆盖元素</h2>
+      <p>描边不是每根条形一个伪元素，而是整条轨道共用<b>一个</b>覆盖元素，逐帧挪到峰值条上。</p>
+      <p>代价是每帧一次微型尺寸写入；因为轨道本身带 <code>contain: layout</code>，影响范围被限制在轨道内部。</p>
+    </section>
+
+    <section>
+      <h2>描边为什么不会被裁掉</h2>
+      <p>条形区带 <code>overflow: hidden</code>，描边会超出条形边界 2px。</p>
+      <p>开启 <code>peakRing</code> 时组件会自动给条形区留出这段空隙，把条形整体左移，描边就不会被切。</p>
+    </section>
+
+    <section>
+      <h2>峰值更窄</h2>
+      <p>bold 预设把 <code>sigma</code> 从 1.8 收到 1.6，峰更尖，相邻条形的过渡更短。</p>
+      <p>配合更大的 <code>peakGain</code>，峰与静止条形的对比度明显拉开。</p>
+    </section>
+
+    <section>
+      <h2>什么时候该用它</h2>
+      <p>章节多、标题长、用户需要「一眼看出现在在哪」时，加粗描边的收益最大。</p>
+      <p>如果是阅读型长文、希望滑条尽量不抢视线，用未处理版更合适。</p>
+    </section>
+
+    <section>
+      <h2>两版之间可以随时切</h2>
+      <p>右上角按钮调用的就是 <code>sp.setOptions({ peakStyle: 'plain' })</code>。</p>
+      <p>切换预设会整体重算参数，预设带进来的 peakGain / peakGainY / peakRing 会干净地还原。</p>
+    </section>
+
+    <section>
+      <h2>只想要其中一项</h2>
+      <p>可以关掉描边只保留加粗：<code>{ peakGainY: 1.2, peakRing: false }</code>。</p>
+      <p>也可以只要描边：<code>{ peakRing: true, peakGainY: 0 }</code>。</p>
+    </section>
+
+    <section>
+      <h2>描边的颜色</h2>
+      <p>默认按明暗主题自动取色，也可以用 <code>peakRingColor</code> 指定任意 CSS 颜色。</p>
+      <p>线宽与空隙分别是 <code>peakRingWidth</code> 与 <code>peakRingGap</code>。</p>
+    </section>
+
+    <section>
+      <h2>发光（可选）</h2>
+      <p>打开 <code>peakGlow</code> 会给峰值条加一层柔和外发光，随 transform 一起缩放，不额外增加写入。</p>
+      <p>深色页面上发光比描边更含蓄，可以两者取其一。</p>
+    </section>
+
+    <section>
+      <h2>动效强度</h2>
+      <p>加粗与描边的强度都跟着触发强度 <code>t</code> 走：未触发时几乎看不出来，指针进入后才完全展开。</p>
+      <p>想让峰值在未触发时也保持醒目，调高 <code>idle</code> 即可。</p>
+    </section>
+
+    <section>
+      <h2>怎么用到自己页面</h2>
+      <p>与未处理版完全一致，只是初始化时多传一个 <code>peakStyle: 'bold'</code>。</p>
+      <p>所有参数都能在 <code>playground.html</code> 里实时调，调好之后把参数抄走即可。</p>
+    </section>
+  </main>
+</div>
+
+<script src="../dist/scrollpeak.min.js"></script>
+<script>
+  var sp = Scrollpeak.init({ peakStyle: 'bold' });
+
+  document.getElementById('btnTheme').addEventListener('click', function () {
+    var root = document.documentElement;
+    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* 页内实时切换：演示 setOptions 换预设 */
+  var btnPreset = document.getElementById('btnPreset');
+  btnPreset.addEventListener('click', function () {
+    var bold = sp.o.peakStyle === 'bold';
+    sp.setOptions({ peakStyle: bold ? 'plain' : 'bold' });
+    btnPreset.textContent = bold ? '切到已处理版' : '切到未处理版';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+---
+blank_issues_enabled: true
+contact_links:
+  - name: 先看路线图
+    url: https://github.com/004Tingting/scrollpeak/blob/main/ROADMAP.md
+    about: 想提的功能可能已经在计划里，或者已经写明「不打算做」及原因
+  - name: 先看 README 的参数表
+    url: https://github.com/004Tingting/scrollpeak/blob/main/README.md
+    about: 大部分外观需求都能用现有参数直接调出来

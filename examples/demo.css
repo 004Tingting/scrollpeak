@@ -1,0 +1,64 @@
+/* Scrollpeak 示例页共用样式 —— 与组件本身无关，纯粹是演示页的外观。 */
+:root {
+  --paper: #f6f7f9;
+  --text: #1b1f27;
+  --muted: #6b7480;
+  --line: #e3e6ea;
+  --code: #eceff3;
+  --codeink: #b91c1c;
+  --accent: #0b7f8c;
+}
+html[data-theme="dark"] {
+  --paper: #14171c;
+  --text: #e7eaef;
+  --muted: #98a1ad;
+  --line: #2a2f37;
+  --code: #232830;
+  --codeink: #f0a3a3;
+  --accent: #4fd0dd;
+}
+
+* { box-sizing: border-box; }
+
+/* html 也要设背景：只设 body 的话，页面在 iframe / 宿主容器里预览时，
+   未被 body 覆盖的区域会透出宿主背景。 */
+html { background: var(--paper); }
+html, body { margin: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--text);
+  font: 15px/1.75 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* 不要给 body 加 background/color 过渡：过渡期间 getComputedStyle 返回插值中的
+     旧颜色，会让组件「读背景亮度判断明暗」读到错误结果。 */
+}
+
+.wrap { max-width: 700px; margin: 0 auto; padding: 64px 32px 180px; }
+
+h1 { font-size: 30px; line-height: 1.3; margin: 0 0 8px; letter-spacing: -.015em; }
+.meta { color: var(--muted); font-size: 13px; margin: 0 0 36px; }
+
+section { padding: 26px 0 30px; border-top: 1px solid var(--line); }
+section:first-of-type { border-top: none; }
+h2 { font-size: 19px; margin: 0 0 10px; letter-spacing: -.01em; }
+p { margin: 0 0 12px; opacity: .86; }
+
+code {
+  background: var(--code); padding: 2px 6px; border-radius: 4px;
+  font-family: Consolas, ui-monospace, monospace; font-size: 13px; color: var(--codeink);
+}
+
+.bar-top { position: fixed; top: 14px; right: 18px; z-index: 9; display: flex; gap: 8px; }
+.bar-top button, .bar-top a {
+  font: 12px/1 inherit; color: var(--text); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px;
+  cursor: pointer; text-decoration: none;
+}
+.bar-top a:hover, .bar-top button:hover { border-color: var(--accent); color: var(--accent); }
+
+.note {
+  background: var(--code); border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; color: var(--muted); margin: 0 0 24px;
+}
+.note b { color: var(--text); }

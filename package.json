@@ -1,0 +1,67 @@
+{
+  "name": "scrollpeak",
+  "version": "1.0.0",
+  "description": "零依赖的右侧单峰滑动指示条：峰值跟随鼠标 / 滚动进度，逐帧只写 transform 与 opacity。",
+  "type": "module",
+  "main": "./dist/scrollpeak.cjs",
+  "module": "./dist/scrollpeak.esm.js",
+  "browser": "./dist/scrollpeak.min.js",
+  "unpkg": "./dist/scrollpeak.min.js",
+  "jsdelivr": "./dist/scrollpeak.min.js",
+  "exports": {
+    ".": {
+      "import": "./dist/scrollpeak.esm.js",
+      "require": "./dist/scrollpeak.cjs",
+      "default": "./dist/scrollpeak.min.js"
+    },
+    "./min": "./dist/scrollpeak.min.js",
+    "./src": "./src/scrollpeak.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "assets",
+    "README.md",
+    "ROADMAP.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node --check src/scrollpeak.js",
+    "test": "node test/smoke.mjs"
+  },
+  "keywords": [
+    "scrollbar",
+    "scroll-indicator",
+    "scrollspy",
+    "scroll-progress",
+    "table-of-contents",
+    "navigation",
+    "rail",
+    "peak",
+    "gaussian",
+    "zero-dependency",
+    "vanilla-js",
+    "no-dependencies",
+    "typescript-free"
+  ],
+  "license": "MIT",
+  "author": "004Tingting",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/004Tingting/scrollpeak.git"
+  },
+  "homepage": "https://github.com/004Tingting/scrollpeak#readme",
+  "bugs": {
+    "url": "https://github.com/004Tingting/scrollpeak/issues"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

@@ -1,0 +1,21 @@
+# 统一按 LF 存储，避免 Windows 检出时把换行改成 CRLF 导致每次 diff 都有噪声
+* text=auto eol=lf
+
+# 明确这些是二进制，别做任何转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# 语言统计：示例页与基准页也是文档的一部分
+*.html linguist-documentation
+*.md linguist-documentation
+
+# 构建产物与单文件示例是刻意提交的（供 CDN 直接引用），
+# 不从这里排除，但默认折叠 diff
+dist/* linguist-generated
+examples/single-file.html linguist-generated
+bench/baseline-legacy.js linguist-generated

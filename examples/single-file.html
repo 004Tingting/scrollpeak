@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrollpeak · 单文件版</title>
+<style>
+/* Scrollpeak 示例页共用样式 —— 与组件本身无关，纯粹是演示页的外观。 */
+:root {
+  --paper: #f6f7f9;
+  --text: #1b1f27;
+  --muted: #6b7480;
+  --line: #e3e6ea;
+  --code: #eceff3;
+  --codeink: #b91c1c;
+  --accent: #0b7f8c;
+}
+html[data-theme="dark"] {
+  --paper: #14171c;
+  --text: #e7eaef;
+  --muted: #98a1ad;
+  --line: #2a2f37;
+  --code: #232830;
+  --codeink: #f0a3a3;
+  --accent: #4fd0dd;
+}
+
+* { box-sizing: border-box; }
+
+/* html 也要设背景：只设 body 的话，页面在 iframe / 宿主容器里预览时，
+   未被 body 覆盖的区域会透出宿主背景。 */
+html { background: var(--paper); }
+html, body { margin: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--text);
+  font: 15px/1.75 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* 不要给 body 加 background/color 过渡：过渡期间 getComputedStyle 返回插值中的
+     旧颜色，会让组件「读背景亮度判断明暗」读到错误结果。 */
+}
+
+.wrap { max-width: 700px; margin: 0 auto; padding: 64px 32px 180px; }
+
+h1 { font-size: 30px; line-height: 1.3; margin: 0 0 8px; letter-spacing: -.015em; }
+.meta { color: var(--muted); font-size: 13px; margin: 0 0 36px; }
+
+section { padding: 26px 0 30px; border-top: 1px solid var(--line); }
+section:first-of-type { border-top: none; }
+h2 { font-size: 19px; margin: 0 0 10px; letter-spacing: -.01em; }
+p { margin: 0 0 12px; opacity: .86; }
+
+code {
+  background: var(--code); padding: 2px 6px; border-radius: 4px;
+  font-family: Consolas, ui-monospace, monospace; font-size: 13px; color: var(--codeink);
+}
+
+.bar-top { position: fixed; top: 14px; right: 18px; z-index: 9; display: flex; gap: 8px; }
+.bar-top button, .bar-top a {
+  font: 12px/1 inherit; color: var(--text); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px;
+  cursor: pointer; text-decoration: none;
+}
+.bar-top a:hover, .bar-top button:hover { border-color: var(--accent); color: var(--accent); }
+
+.note {
+  background: var(--code); border-radius: 10px; padding: 12px 14px;
+  font-size: 13px; color: var(--muted); margin: 0 0 24px;
+}
+.note b { color: var(--text); }
+
+</style>
+</head>
+<body>
+
+<div class="bar-top">
+  <a href="index.html">← 全部示例</a>
+  <button id="btnTheme">切换明暗</button>
+  <button id="btnPreset">切到已处理版</button>
+</div>
+
+<div class="wrap">
+  <h1>Scrollpeak · 单文件版</h1>
+  <p class="meta">组件、样式与演示页全部内联在本文件里，双击即可打开，不依赖任何外部文件。</p>
+
+  <p class="note">
+    初始化参数：<code>Scrollpeak.init({ peakStyle: 'plain' })</code><br>
+    对照页：<b><a href="bold.html">已处理版（bold）</a></b> ·
+    <b><a href="playground.html">参数实验台</a></b>
+  </p>
+
+  <main data-scrollpeak>
+    <section>
+      <h2>这是什么</h2>
+      <p>一条贴在页面右侧的滑动指示条：条形右对齐、从右向左生长，整条轨道上只有一个峰。</p>
+      <p>鼠标不在轨道上时，峰的位置对应页面滚动进度；鼠标进入轨道后，峰改为跟随指针。</p>
+    </section>
+
+    <section>
+      <h2>未处理版的样子</h2>
+      <p>所有条形静止宽度一致，宽度差异只来自峰值本身，所以永远不会出现「假峰」。</p>
+      <p>峰值按高斯曲线衰减，半宽 σ 以「根」为单位，默认 1.8。</p>
+    </section>
+
+    <section>
+      <h2>触发范围</h2>
+      <p>可触发的竖直范围只覆盖第一根到最后一根条形、上下各留 22px 余量，不是整页高度。</p>
+      <p>所以指针必须真的移到轨道附近才会触发，不会在页面右侧随便划一下就弹出提示卡。</p>
+    </section>
+
+    <section>
+      <h2>明暗自适应</h2>
+      <p>组件读取页面背景亮度：浅色页面用灰黑条形，深色页面用灰白条形，提示卡配色同步。</p>
+      <p>右上角按钮可以切换，滑条颜色会立刻跟着变。</p>
+    </section>
+
+    <section>
+      <h2>提示卡</h2>
+      <p>触发后会在轨道左侧弹出一张只含标题的提示卡，长标题单行省略号截断。</p>
+      <p>同时左侧正文里对应的标题会变色高亮，便于确认当前位置。</p>
+    </section>
+
+    <section>
+      <h2>点击跳转</h2>
+      <p>在轨道任意位置点击，会平滑滚动到对应的章节。</p>
+      <p>光标悬停时显示手型指针，提示这里可以点。</p>
+    </section>
+
+    <section>
+      <h2>峰值怎么算</h2>
+      <p>峰值位置是一个 0–1 的连续值，乘以「条形数 − 1」得到连续的条形序号。</p>
+      <p>每根条形的强度取高斯函数在该处的值，再分别映射到横向缩放与透明度。</p>
+    </section>
+
+    <section>
+      <h2>为什么不用整页高度取比例</h2>
+      <p>条形只占滑槽中间一段，上下各有留白。按滑槽高度取比例会让指针与条形上下错位。</p>
+      <p>正确做法是用条形间距换算：<code>idx = (clientY − railTop − firstCenter) / step</code>。</p>
+    </section>
+
+    <section>
+      <h2>性能取向</h2>
+      <p>逐帧只写 <code>transform</code> 与 <code>opacity</code>，不碰 width / left / background-color。</p>
+      <p>阻尼收敛后 rAF 循环直接退出，页面静止时主线程占用归零。</p>
+    </section>
+
+    <section>
+      <h2>窗口化更新</h2>
+      <p>每帧只重算峰值附近 <code>±windowSigma × max(四个 sigma)</code> 根条形，与文档长度无关。</p>
+      <p>离开窗口的条形会被复位成静止状态，因此不会留下残影。</p>
+    </section>
+
+    <section>
+      <h2>合成层</h2>
+      <p>整条轨道只提升一个合成层，不给每根条形加 <code>will-change</code>。</p>
+      <p>文档有 1000 个章节时，这也是 1 个图层和 1000 个图层的区别。</p>
+    </section>
+
+    <section>
+      <h2>怎么用到自己页面</h2>
+      <p>给内容容器加 <code>data-scrollpeak</code>，引入 <code>dist/scrollpeak.min.js</code>，调用 <code>Scrollpeak.init()</code> 即可。</p>
+      <p>条目文案默认取容器子元素里的标题，也可以用 <code>data-sp-title</code> 单独覆盖。</p>
+    </section>
+  </main>
+</div>
+
+<script>
+/*!
+ * Scrollpeak v1.0.0
+ * 右侧单峰滑动指示条 —— 峰值跟随鼠标 / 滚动进度，逐帧只写 transform 与 opacity。
+ * MIT License
+ *
+ * 设计要点（性能）：
+ *   1. 窗口化更新：只重算峰值 ±windowSigma×max(四个 sigma) 根条形，复杂度与文档长度无关
+ *   2. 量化 + 字符串查表：scale/opacity 先量化成整数再比较，命中缓存则完全不分配字符串
+ *   3. 不逐根条形加 will-change：整条轨道只提升一个合成层，避免 N 个图层
+ *   4. 主题检测去抖 + 结果缓存：背景色字符串没变就不再调 getComputedStyle
+ *   5. 静止即停机：阻尼收敛后 rAF 循环直接退出，主线程占用归零
+ */
+var Scrollpeak=(()=>{var w=Object.defineProperty;var z=Object.getOwnPropertyDescriptor;var P=Object.getOwnPropertyNames;var W=Object.prototype.hasOwnProperty;var X=(n,t)=>{for(var e in t)w(n,e,{get:t[e],enumerable:!0})},D=(n,t,e,i)=>{if(t&&typeof t=="object"||typeof t=="function")for(let s of P(t))!W.call(n,s)&&s!==e&&w(n,s,{get:()=>t[s],enumerable:!(i=z(t,s))||i.enumerable});return n};var H=n=>D(w({},"__esModule",{value:!0}),n);var Z={};X(Z,{Scrollpeak:()=>k,VERSION:()=>S,auto:()=>$,default:()=>Q,defaults:()=>A,init:()=>I,presets:()=>E,version:()=>S});var S="1.0.0",E={plain:{},bold:{peakGain:5,peakGainY:1.2,sigma:1.6,peakRing:!0}},A={container:"[data-scrollpeak]",heading:"h2",items:null,minItems:3,titleAttr:"data-sp-title",skipAttr:"data-sp-skip",hitWidth:170,stageWidth:72,barWidth:6,barHeight:3,barGap:9,padY:22,edgeGap:9,peakStyle:"plain",peakGain:4.5,peakGainY:0,peakGainYIdle:0,sigma:1.8,sigmaIdle:null,sigmaActive:null,sigmaY:null,sigmaYIdle:null,sigmaYActive:null,idle:.3,windowSigma:4,damp:.22,settleEps:6e-4,theme:"auto",inkLight:"#111318",inkDark:"#e9ecf1",baseOpacityIdle:.1,baseOpacityActive:.34,peakOpacityIdle:.42,peakOpacityActive:1,peakRing:!1,peakRingWidth:1,peakRingGap:1,peakRingColor:null,peakGlow:!1,layer:"container",zIndex:2147483e3,clickToScroll:!0,scrollBehavior:"smooth",cursor:"pointer",showPeek:!0,peekGap:18,peekMaxWidth:240,peekThreshold:.4,keyboard:!1,activeClass:"sp-active",activeColor:"#0b7f8c",onEngage:null,onLeave:null,onActive:null,onTheme:null,quantScale:256,quantOpacity:170};function x(n){for(let t=1;t<arguments.length;t++){let e=arguments[t];if(e)for(let i in e)Object.prototype.hasOwnProperty.call(e,i)&&e[i]!==void 0&&(n[i]=e[i])}return n}function M(n){let t=n.querySelector("h1,h2,h3,h4,h5,h6");return((t?t.textContent:n.textContent)||"").replace(/\s+/g," ").trim()}function B(n){return n?typeof n=="string"?document.querySelector(n):n.nodeType===1?n:null:null}function C(n){let t=x({},A,E[n&&n.peakStyle]||null,n||{});t.hitWidth<t.stageWidth&&(t.hitWidth=t.stageWidth),t.sigmaIdle==null&&(t.sigmaIdle=t.sigma),t.sigmaActive==null&&(t.sigmaActive=t.sigma);let e=t.sigmaY;return t.sigmaYIdle==null&&(t.sigmaYIdle=e==null?t.sigmaIdle:e),t.sigmaYActive==null&&(t.sigmaYActive=e==null?t.sigmaActive:e),t}function j(n){let t=[];if(n.items&&n.items.length){for(let i of n.items){let s,r;typeof i=="string"?s=document.querySelector(i):i.nodeType===1?s=i:i&&(s=i.el||null,r=i.t||i.title),s&&t.push({el:s,t:r||M(s)})}return t}let e=B(n.container);if(e)for(let i of e.children){if(!i.tagName||n.skipAttr&&i.hasAttribute(n.skipAttr))continue;let s=i.getAttribute(n.titleAttr)||M(i);s&&t.push({el:i,t:s})}return t.length||document.querySelectorAll(n.heading).forEach(i=>{let s=(i.textContent||"").replace(/\s+/g," ").trim();s&&t.push({el:i,t:s})}),t}var U=0,Y=new Set;function q(n,t){let e="."+n,i=t.peakRing?t.peakRingGap+t.peakRingWidth:0,s=[`${e},${e}-peek{--sp-ink:${t.inkLight};--sp-card:#ffffff;--sp-cardline:#e6e9ee;`,`--sp-cardink:#1b1f27;--sp-ring:${t.peakRingColor||"rgba(17,19,24,.42)"};}`,`${e}.is-dark,${e}-peek.is-dark{--sp-ink:${t.inkDark};--sp-card:#1e232a;`,"--sp-cardline:#333a44;--sp-cardink:#eef1f5;",`--sp-ring:${t.peakRingColor||"rgba(233,236,241,.5)"};}`,`${e}{position:fixed;right:${t.edgeGap}px;top:50%;transform:translateY(-50%);`,`width:${t.hitWidth}px;padding:${t.padY}px 0;z-index:${t.zIndex};`,`cursor:${t.cursor};touch-action:none;contain:layout style paint;}`,`${e}:focus-visible{outline:2px solid ${t.activeColor};outline-offset:4px;border-radius:8px;}`,`${e} .sp-stage{position:relative;margin-left:auto;width:${t.stageWidth+i}px;`,`box-sizing:border-box;padding-right:${i}px;overflow:hidden;}`,`${e} .sp-bars{position:relative;display:flex;flex-direction:column;align-items:flex-end;`,`gap:${t.barGap}px;}`,`${e} .sp-bar{height:${t.barHeight}px;width:${t.barWidth}px;border-radius:99px;`,`background:var(--sp-ink);opacity:${t.baseOpacityIdle};transform:scale(1,1);`,"transform-origin:right center;}",`${e} .sp-ring{position:absolute;right:0;top:0;box-sizing:border-box;`,`border:${t.peakRingWidth}px solid var(--sp-ring);border-radius:99px;`,"pointer-events:none;opacity:0;display:none;will-change:transform,opacity;}",`${e}.has-ring .sp-ring{display:block;}`,`${e}-peek{position:fixed;top:0;right:${t.stageWidth+t.edgeGap+t.peekGap}px;`,`max-width:${t.peekMaxWidth}px;background:var(--sp-card);border:1px solid var(--sp-cardline);`,"border-radius:10px;padding:9px 12px;pointer-events:none;opacity:0;",`transform:translate3d(0,0,0);transition:opacity .14s ease;z-index:${t.zIndex+1};`,"will-change:transform,opacity;box-shadow:0 8px 24px -12px rgba(0,0,0,.3);}",`${e}-peek.on{opacity:1;}`,`${e}-peek h3{margin:0;font:600 13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",`,'"Microsoft YaHei","PingFang SC",sans-serif;color:var(--sp-cardink);white-space:nowrap;',"overflow:hidden;text-overflow:ellipsis;}",`@media (prefers-reduced-motion:reduce){${e}-peek{transition:none;}}`];return t.layer==="container"?s.push(`${e} .sp-bars{will-change:transform;transform:translateZ(0);}`):t.layer==="bar"&&s.push(`${e} .sp-bar{will-change:transform,opacity;}`),t.peakGlow&&s.push(`${e} .sp-bar{box-shadow:0 0 4px 1px var(--sp-ring);}`),s.join("")}function V(n,t){let e=n+"|"+t;if(Y.has(e))return;Y.add(e);let i=document.createElement("style");i.textContent=`.${n}>:is(h1,h2,h3,h4,h5,h6),.${n} :is(h1,h2,h3,h4,h5,h6){color:${t} !important;transition:color .18s ease;}`,document.head.appendChild(i)}var k=class{constructor(t){this._user=x({},t||{});let e=this.o=C(this._user);this.uid="sp-"+(++U).toString(36)+Math.random().toString(36).slice(2,6),this._raf=0,this._running=!1,this._destroyed=!1,this._engaged=!1,this._full=!0,this._lo=0,this._hi=-1,this._target=.5,this._cur=.5,this._t=e.idle,this._lastT=-1,this._active=-1,this._activeSec=-1,this._lastY=NaN,this._lastBg="",this._ringOn=!1,this._rw=-1,this._rh=-1,this._render=this._render.bind(this),this._tfCache=[],this._opCache=[],this._buildLut(),this._build(),!this._aborted&&(this._bind(),this._syncTheme(),this._measure(),this._target=this._cur=this._scrollProgress(),this._kick())}_buildLut(){let i=this.o;this._lutMax=8,this._lutN=512,this._lutXIdle=this._makeLut(i.sigmaIdle,512,8),this._lutXActive=i.sigmaActive===i.sigmaIdle?this._lutXIdle:this._makeLut(i.sigmaActive,512,8);let s=r=>r===i.sigmaIdle?this._lutXIdle:r===i.sigmaActive?this._lutXActive:null;this._lutYIdle=s(i.sigmaYIdle)||this._makeLut(i.sigmaYIdle,512,8),this._lutYActive=i.sigmaYActive===i.sigmaYIdle?this._lutYIdle:s(i.sigmaYActive)||this._makeLut(i.sigmaYActive,512,8),this._xSame=this._lutXIdle===this._lutXActive,this._yMode=this._lutYIdle===this._lutXIdle&&this._lutYActive===this._lutXActive?0:this._lutYIdle===this._lutYActive?1:2}_makeLut(t,e,i){let s=new Float32Array(e+1);for(let r=0;r<=e;r++){let a=r/e*i;s[r]=Math.exp(-(a*a)/(2*t*t))}return s}_lutAtIn(t,e){return e>=this._lutMax?0:t[e/this._lutMax*this._lutN|0]}_inf(t,e){let i=this._lutAtIn(this._lutXIdle,t);if(this._xSame)return i;let s=this._lutAtIn(this._lutXActive,t);return i+(s-i)*e}_infY(t,e,i){if(this._yMode===0)return e;let s=this._lutAtIn(this._lutYIdle,t);if(this._yMode===1)return s;let r=this._lutAtIn(this._lutYActive,t);return s+(r-s)*i}_build(){let t=this.o,e=this.items=j(t);if(e.length<t.minItems){this._aborted=!0;return}let i=this._n=e.length,s=this.rail=document.createElement("aside");s.className="sp-rail "+this.uid+(t.peakRing?" has-ring":""),s.setAttribute("aria-label","文档导航"),t.keyboard&&(s.setAttribute("role","slider"),s.setAttribute("aria-orientation","vertical"),s.setAttribute("aria-valuemin","1"),s.setAttribute("aria-valuemax",String(i)),s.setAttribute("tabindex","0"));let r=this.stage=document.createElement("div");r.className="sp-stage";let a=this.barsEl=document.createElement("div");if(a.className="sp-bars",r.appendChild(a),s.appendChild(r),t.peakRing){let h=this.ringEl=document.createElement("div");h.className="sp-ring",s.appendChild(h)}document.body.appendChild(s);let o=this.peek=document.createElement("div");o.className=this.uid+"-peek",o.setAttribute("role","tooltip"),o.setAttribute("aria-hidden","true"),o.innerHTML="<h3></h3>",document.body.appendChild(o),this.styleEl=document.createElement("style"),this.styleEl.textContent=q(this.uid,t),document.head.appendChild(this.styleEl),V(t.activeClass,t.activeColor);let l=document.createDocumentFragment();this._bars=new Array(i);for(let h=0;h<i;h++){let u=document.createElement("div");u.className="sp-bar",l.appendChild(u),this._bars[h]={el:u,center:0,qx:-1,qy:-1,qo:-1}}a.appendChild(l)}_measure(){if(this._aborted)return;let t=this.o,e=this.rail.getBoundingClientRect();this._railTop=e.top,this._railH=e.height||1;let i=this._bars[0].el,s=parseFloat(getComputedStyle(i).height)||i.offsetHeight||t.barHeight,r=0,a=i,o=!1;for(;a;){if(a===this.rail){o=!0;break}r+=a.offsetTop,a=a.offsetParent}o||(r=i.getBoundingClientRect().top-e.top);let l=getComputedStyle(this.barsEl),h=parseFloat(l.rowGap||l.gap)||t.barGap,u=this._step=s+h,b=this._firstCenter=r+s/2;for(let g=0;g<this._n;g++)this._bars[g].center=b+g*u;this._full=!0}_posToTarget(t){let e=(t-this._railTop-this._firstCenter)/this._step;return Math.min(1,Math.max(0,e/(this._n-1)))}_scrollProgress(){let t=document.documentElement,e=t.scrollHeight-window.innerHeight;return e>0?Math.min(1,Math.max(0,(window.scrollY||t.scrollTop||0)/e)):.5}_tf(t,e){let i=this._tfCache[t];i||(i=this._tfCache[t]=[]);let s=i[e];if(s===void 0){let r=this.o.quantScale;s=i[e]="scale("+(1+t/r).toFixed(3)+","+(1+e/r).toFixed(3)+")"}return s}_op(t){let e=this._opCache[t];return e===void 0&&(e=this._opCache[t]=(t/this.o.quantOpacity).toFixed(3)),e}_write(t,e,i,s){let r=this._bars[t],a=this.o.quantScale,o=(e-1)*a+.5|0,l=(i-1)*a+.5|0,h=s*this.o.quantOpacity+.5|0;o===r.qx&&l===r.qy&&h===r.qo||((o!==r.qx||l!==r.qy)&&(r.el.style.transform=this._tf(o,l),r.qx=o,r.qy=l),h!==r.qo&&(r.el.style.opacity=this._op(h),r.qo=h))}_rest(t,e){let i=this._bars[t];i.qx===0&&i.qy===0&&i.qo===e||((i.qx!==0||i.qy!==0)&&(i.el.style.transform=this._tf(0,0),i.qx=0,i.qy=0),i.qo!==e&&(i.el.style.opacity=this._op(e),i.qo=e))}_kick(){this._running||this._destroyed||(this._running=!0,this._raf=requestAnimationFrame(this._render))}_render(){this._raf=0;let t=this.o,e=this._bars,i=this._n,s=this._reduced,r=this._cur,a=this._t;if(s)r=this._target,a=this._engaged?1:t.idle;else{r+=(this._target-r)*t.damp;let _=this._engaged?1:t.idle;a+=(_-a)*.2}let o=this._engaged?1:t.idle,l=t.baseOpacityIdle+(t.baseOpacityActive-t.baseOpacityIdle)*a,h=t.peakOpacityIdle+(t.peakOpacityActive-t.peakOpacityIdle)*a,u=1-t.idle,b=u>.001?Math.min(1,Math.max(0,(a-t.idle)/u)):1,g=this._full||Math.abs(a-this._lastT)>1e-4,p=r*(i-1),f,v;if(g)f=0,v=i-1;else{let _=t.windowSigma*Math.max(t.sigmaIdle,t.sigmaActive,t.sigmaYIdle,t.sigmaYActive)+1;if(f=Math.max(0,Math.floor(p-_)),v=Math.min(i-1,Math.ceil(p+_)),this._hi>=this._lo){let y=l*t.quantOpacity+.5|0;for(let d=this._lo;d<f;d++)this._rest(d,y);for(let d=v+1;d<=this._hi;d++)this._rest(d,y)}}let c=f,m=-1;for(let _=f;_<=v;_++){let y=_>p?_-p:p-_,d=this._inf(y,b);d>m&&(m=d,c=_);let N=this._infY(y,d,b),G=1+d*t.peakGain*a,F=1+N*(t.peakGainYIdle+t.peakGainY*a);this._write(_,G,F,l+d*(h-l))}m<0&&(m=0);let R=1+m*t.peakGain*a,T=c>p?c-p:p-c,O=1+this._infY(T,m,b)*(t.peakGainYIdle+t.peakGainY*a);this._cur=r,this._t=a,this._lastT=a,this._lo=f,this._hi=v,this._full=!1;let L=this._engaged&&m>t.peekThreshold;if(L?this._active!==c&&(this._active=c,this._showPeek(c),this._setActive(c),this.peek.style.transform="translate3d(0,"+(this._railTop+e[c].center-18).toFixed(0)+"px,0)",this.peek.classList.add("on"),this.peek.setAttribute("aria-hidden","false"),t.keyboard&&this.rail.setAttribute("aria-valuenow",String(c+1)),t.onActive&&t.onActive(c,this.items[c])):this._active!==-1&&(this._active=-1,this._hidePeek(),this._setActive(-1)),t.peakRing&&this._ring(c,L?m:0,R,O),Math.abs(this._target-r)<t.settleEps&&Math.abs(o-a)<.002){this._cur=this._target,this._t=o,this._running=!1;return}this._raf=requestAnimationFrame(this._render)}_ring(t,e,i,s){let r=this.o,a=this.ringEl;if(e<=.02){this._ringOn&&(a.style.opacity="0",this._ringOn=!1);return}let o=r.peakRingGap+r.peakRingWidth,l=Math.round(r.barWidth*i+o*2),h=Math.round(r.barHeight*s+o*2);(l!==this._rw||h!==this._rh)&&(a.style.width=l+"px",a.style.height=h+"px",this._rw=l,this._rh=h),a.style.transform="translate3d(0,"+(this._bars[t].center-h/2).toFixed(1)+"px,0)";let u=e>1?1:e;u!==this._ro&&(a.style.opacity=u.toFixed(2),this._ro=u),this._ringOn=!0}_showPeek(t){this.o.showPeek&&(this.peek.querySelector("h3").textContent=this.items[t].t)}_hidePeek(){this.o.showPeek&&(this.peek.classList.remove("on"),this.peek.setAttribute("aria-hidden","true"))}_setActive(t){let e=this.o;t!==this._activeSec&&(this._activeSec>=0&&this.items[this._activeSec].el&&this.items[this._activeSec].el.classList.remove(e.activeClass),this._activeSec=t,t>=0&&this.items[t].el&&this.items[t].el.classList.add(e.activeClass))}_bgLum(){let t=document.body,e=t?getComputedStyle(t).backgroundColor:"",i=/rgba?\(([^)]+)\)/.exec(e||"");if(i){let s=i[1].split(",").map(Number);if(s.length<4||s[3]>.5)return(.2126*s[0]+.7152*s[1]+.0722*s[2])/255}if(e=getComputedStyle(document.documentElement).backgroundColor,i=/rgba?\(([^)]+)\)/.exec(e||""),i){let s=i[1].split(",").map(Number);return(.2126*s[0]+.7152*s[1]+.0722*s[2])/255}return 1}_syncTheme(){if(this._aborted)return;let t=this.o,e;t.theme==="dark"?e=!0:t.theme==="light"?e=!1:e=this._bgLum()<.5,this._dark=e,this.rail.classList.toggle("is-dark",e),this.peek.classList.toggle("is-dark",e),t.onTheme&&t.onTheme(e?"dark":"light")}_onMutate(){this._themeRaf||(this._themeRaf=requestAnimationFrame(()=>{this._themeRaf=0;let t=(document.documentElement.getAttribute("class")||"")+"|"+(document.documentElement.getAttribute("data-theme")||"")+"|"+(document.body&&document.body.getAttribute("class")||"")+"|"+(document.body&&document.body.getAttribute("style")||"");t!==this._lastBg&&(this._lastBg=t,this._syncTheme())}))}_bind(){let t={passive:!0};this._hEnter=()=>{this._engaged=!0,this.o.onEngage&&this.o.onEngage(),this._kick()},this._hLeave=()=>{this._engaged=!1,this._target=this._scrollProgress(),this.o.onLeave&&this.o.onLeave(),this._kick()},this._hMove=e=>{e.clientY!==this._lastY&&(this._lastY=e.clientY,this._target=this._posToTarget(e.clientY),this._engaged=!0,this._kick())},this._hDown=e=>{this._engaged=!0,this._lastY=e.clientY,this._target=this._posToTarget(e.clientY),this._kick()},this._hClick=e=>{if(!this.o.clickToScroll)return;let i=Math.min(this._n-1,Math.round(this._posToTarget(e.clientY)*(this._n-1)));this.items[i].el.scrollIntoView({behavior:this.o.scrollBehavior,block:"start"})},this._hScroll=()=>{this._engaged||(this._target=this._scrollProgress(),this._kick())},this._hKey=e=>{if(!this.o.keyboard)return;let i=this._n,s=this._active<0?Math.round(this._cur*(i-1)):this._active,r=!0;switch(e.key){case"ArrowDown":case"ArrowRight":s=Math.min(i-1,s+1);break;case"ArrowUp":case"ArrowLeft":s=Math.max(0,s-1);break;case"PageDown":s=Math.min(i-1,s+5);break;case"PageUp":s=Math.max(0,s-5);break;case"Home":s=0;break;case"End":s=i-1;break;case"Enter":case" ":this.items[Math.min(i-1,Math.max(0,s))].el.scrollIntoView({behavior:this.o.scrollBehavior,block:"start"}),e.preventDefault();return;default:r=!1}r&&(e.preventDefault(),this._engaged=!0,this._target=s/(i-1),this._showPeek(s),this._setActive(s),this._active=s,this._kick())},this.rail.addEventListener("pointerenter",this._hEnter,t),this.rail.addEventListener("pointerleave",this._hLeave,t),this.rail.addEventListener("pointermove",this._hMove,t),this.rail.addEventListener("pointerdown",this._hDown,t),this.rail.addEventListener("click",this._hClick),this.rail.addEventListener("keydown",this._hKey),window.addEventListener("scroll",this._hScroll,t),this._hResize=()=>{this._rz||(this._rz=requestAnimationFrame(()=>{this._rz=0,this._measure();for(let e=0;e<this._n;e++)this._bars[e].qx=this._bars[e].qy=this._bars[e].qo=-1;this._engaged||(this._target=this._scrollProgress()),this._kick()}))},window.addEventListener("resize",this._hResize,t),window.ResizeObserver&&(this._ro=new ResizeObserver(this._hResize),this._ro.observe(this.rail),this._ro.observe(document.documentElement)),window.MutationObserver&&(this._mo=new MutationObserver(()=>this._onMutate()),this._mo.observe(document.documentElement,{attributes:!0,attributeFilter:["class","style","data-theme"]}),this._mo.observe(document.body,{attributes:!0,attributeFilter:["class","style","data-theme"]})),window.matchMedia&&(this._mq=window.matchMedia("(prefers-color-scheme: dark)"),this._mq.addEventListener&&this._mq.addEventListener("change",this._hResize),this._mqm=window.matchMedia("(prefers-reduced-motion: reduce)"),this._reduced=this._mqm.matches)}refresh(){return this._destroyed?this:(this.destroy({keepOptions:!0}),this._destroyed=!1,this._aborted=!1,this._build(),this._aborted?this:(this._bind(),this._syncTheme(),this._measure(),this._target=this._cur=this._scrollProgress(),this._kick(),this))}setOptions(t){if(this._destroyed)return this;x(this._user,t);let e=this.o=C(this._user);this._buildLut(),this.styleEl.textContent=q(this.uid,e),this.rail.classList.toggle("has-ring",!!e.peakRing),e.peakRing&&!this.ringEl&&(this.ringEl=document.createElement("div"),this.ringEl.className="sp-ring",this.rail.appendChild(this.ringEl)),this.rail.style.cursor=e.cursor,e.keyboard?(this.rail.setAttribute("role","slider"),this.rail.setAttribute("aria-orientation","vertical"),this.rail.setAttribute("tabindex","0")):(this.rail.removeAttribute("role"),this.rail.removeAttribute("tabindex"));for(let i=0;i<this._n;i++)this._bars[i].qx=this._bars[i].qy=this._bars[i].qo=-1;return this._tfCache=[],this._opCache=[],this._measure(),this._kick(),this}setTheme(t){return this.o.theme=t,this._user.theme=t,this._syncTheme(),this}reset(t){return this._user=x({},t||{}),this.setOptions({})}scrollToIndex(t){let e=Math.min(this._n-1,Math.max(0,t|0));return this.items[e].el.scrollIntoView({behavior:this.o.scrollBehavior,block:"start"}),this}get state(){return{engaged:this._engaged,active:this._active,target:this._target,current:this._cur,intensity:this._t,dark:!!this._dark,count:this._n||0,title:this._active>=0&&this.items[this._active]?this.items[this._active].t:null}}destroy(t){this._destroyed||(this._destroyed=!0,this._raf&&cancelAnimationFrame(this._raf),this._rz&&cancelAnimationFrame(this._rz),this._themeRaf&&cancelAnimationFrame(this._themeRaf),this._ro&&this._ro.disconnect(),this._mo&&this._mo.disconnect(),this.rail&&(this.rail.removeEventListener("pointerenter",this._hEnter),this.rail.removeEventListener("pointerleave",this._hLeave),this.rail.removeEventListener("pointermove",this._hMove),this.rail.removeEventListener("pointerdown",this._hDown),this.rail.removeEventListener("click",this._hClick),this.rail.removeEventListener("keydown",this._hKey)),window.removeEventListener("scroll",this._hScroll),window.removeEventListener("resize",this._hResize),this.rail&&this.rail.parentNode&&this.rail.parentNode.removeChild(this.rail),this.peek&&this.peek.parentNode&&this.peek.parentNode.removeChild(this.peek),this.styleEl&&this.styleEl.parentNode&&this.styleEl.parentNode.removeChild(this.styleEl),this._setActive(-1),(!t||!t.keepOptions)&&(this.rail=this.peek=this.styleEl=this.ringEl=null),this._running=!1)}};function I(n){let t=new k(n);return t._aborted?null:t}function $(n){let t=n||{},e=t.container||A.container,i=typeof e=="string"?document.querySelectorAll(e):[e],s=[];return i.forEach(r=>{let a=I(x({},t,{container:r}));a&&s.push(a)}),s}var K=Object.assign(k,{version:S,defaults:A,presets:E,init:I,auto:$,Scrollpeak:k});var Q=K;return H(Z);})();
+
+</script>
+<script>
+  /* 未处理版：不做任何峰值强调 */
+  var sp = Scrollpeak.init({ peakStyle: 'plain' });
+
+  document.getElementById('btnTheme').addEventListener('click', function () {
+    var root = document.documentElement;
+    root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* 页内实时切换：演示 setOptions 换预设 */
+  var btnPreset = document.getElementById('btnPreset');
+  btnPreset.addEventListener('click', function () {
+    var plain = sp.o.peakStyle === 'plain';
+    sp.setOptions({ peakStyle: plain ? 'bold' : 'plain' });
+    btnPreset.textContent = plain ? '切到未处理版' : '切到已处理版';
+  });
+</script>
+</body>
+</html>

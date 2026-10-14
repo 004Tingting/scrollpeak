@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrollpeak · 参数实验台</title>
+<link rel="stylesheet" href="demo.css">
+<style>
+  /* 实验台自己的布局：左侧控制面板 + 右侧正文（滑条在页面最右，不会打架） */
+  body { overflow-x: hidden; }
+  #panel {
+    position: fixed; left: 0; top: 0; bottom: 0; width: 316px; overflow-y: auto;
+    background: var(--paper); border-right: 1px solid var(--line); padding: 14px 16px 60px; z-index: 10;
+  }
+  #panel h4 { margin: 18px 0 8px; font-size: 12px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); }
+  #panel h4:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 7px 0; font-size: 12.5px; }
+  .row label { flex: 1; color: var(--text); }
+  .row output { width: 46px; text-align: right; color: var(--muted);
+    font-family: Consolas, ui-monospace, monospace; }
+  .row input[type=range] { width: 96px; }
+  .row input[type=checkbox] { width: 15px; height: 15px; }
+  .row select { font: inherit; padding: 2px 4px; }
+  #json {
+    width: 100%; height: 150px; margin-top: 6px; font: 11.5px/1.5 Consolas, monospace;
+    background: var(--code); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 8px; resize: vertical;
+  }
+  #panel button {
+    font: 12px/1 inherit; padding: 7px 10px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--paper); color: var(--text);
+  }
+  #panel button:hover { border-color: var(--accent); color: var(--accent); }
+  .wrap { margin-left: 316px; }
+  #state { font: 11.5px/1.7 Consolas, monospace; color: var(--muted); }
+  #state b { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div id="panel">
+  <h4>预设</h4>
+  <div class="row">
+    <label>peakStyle</label>
+    <select data-k="peakStyle">
+      <option value="plain">plain 未处理</option>
+      <option value="bold">bold 已处理</option>
+    </select>
+  </div>
+
+  <h4>峰形</h4>
+  <div id="grp-peak"></div>
+
+  <h4>几何</h4>
+  <div id="grp-geo"></div>
+
+  <h4>透明度</h4>
+  <div id="grp-opacity"></div>
+
+  <h4>峰值强调</h4>
+  <div id="grp-ring"></div>
+
+  <h4>交互</h4>
+  <div id="grp-ux"></div>
+
+  <h4>性能</h4>
+  <div id="grp-perf"></div>
+
+  <h4>当前参数（可直接复制）</h4>
+  <textarea id="json" readonly></textarea>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button id="btnCopy">复制参数</button>
+    <button id="btnReset">恢复默认</button>
+  </div>
+
+  <h4>实时状态</h4>
+  <div id="state"></div>
+</div>
+
+<div class="wrap">
+  <h1>参数实验台</h1>
+  <p class="meta">左边改参数，右边的滑条立刻生效。调好之后把下面的 JSON 抄进 <code>Scrollpeak.init({...})</code>。</p>
+
+  <main data-scrollpeak>
+    <section><h2>怎么用这个页面</h2>
+      <p>把指针移到页面最右侧的滑条上，峰值会跟随指针；离开滑条后，峰值回到跟随滚动进度。</p>
+      <p>改左边的任意参数，滑条会立即重建，不需要刷新。</p></section>
+    <section><h2>peakGain：峰值横向放大</h2>
+      <p>决定峰值条最长能到静止宽度的几倍。调大更醒目，调太大在窄屏上会顶到正文。</p></section>
+    <section><h2>peakGainY：峰值纵向加粗</h2>
+      <p>大于 0 时峰值条同时变粗，形成胶囊感。这就是「已处理版」的主要手法。</p></section>
+    <section><h2>sigma 系列：四条衰减曲线</h2>
+      <p>峰形由四条高斯曲线决定，每条都分「闲置 / 触发」两个取值：横向的 <code>sigmaIdle</code> / <code>sigmaActive</code> 管放大与透明度，纵向的 <code>sigmaYIdle</code> / <code>sigmaYActive</code> 管加粗范围。</p>
+      <p>四个都默认跟随基准值 <code>sigma</code>；<code>sigmaY</code> 是「一次设两个纵向值」的简写。</p>
+      <p>两个状态之间用<b>归一化强度</b>混合：闲置时恰好取 <code>*Idle</code>，完全触发时恰好取 <code>*Active</code>，中间平滑插值。</p></section>
+    <section><h2>sigmaYIdle / sigmaYActive：加粗的上下范围</h2>
+      <p>单独控制「峰值上下各多少根条形会被加粗」，与横向解耦。</p>
+      <p>调小只有紧邻的一两根变粗，胶囊更锐利；调大则上下形成一片平缓的隆起。</p>
+      <p>把闲置值调小、触发值调大，就能做出「平时收着、悬停后摊开」的效果。</p></section>
+    <section><h2>peakGainYIdle：未触发时的保底加粗</h2>
+      <p>未触发时强度只有 <code>idle</code>（默认 0.3），纵向加粗只有 <code>peakGainY × idle</code> ≈ 36%，所以峰几乎看不出来。</p>
+      <p><code>peakGainYIdle</code> 是一份<b>与触发强度无关</b>的恒定加粗量，专门用来让未触发时也能看出峰在哪。</p>
+      <p>它只影响粗细，不影响长度与透明度；想让长度也一起变明显，调大 <code>idle</code>。</p></section>
+    <section><h2>windowSigma：每帧算多少根</h2>
+      <p>每帧只重算峰值附近 <code>±windowSigma × max(四个 sigma)</code> 根条形，这是性能开关。</p>
+      <p>调得比 3 还小时，峰的两侧可能被截断，出现硬边。</p></section>
+    <section><h2>barWidth / barHeight / barGap</h2>
+      <p>条形静止宽度、高度与间距。三者共同决定轨道总高：<code>N × barHeight + (N−1) × barGap</code>。</p></section>
+    <section><h2>hitWidth：触发区宽度</h2>
+      <p>从页面右边缘往左算的感应宽度。调大更容易触发，但也更容易被误触发。</p></section>
+    <section><h2>padY：滑槽上下余量</h2>
+      <p>触发范围在条形上下各留出的余量。它只影响触发区，不影响条形本身的位置。</p></section>
+    <section><h2>idle：未触发时的强度</h2>
+      <p>指针不在滑条上时峰值的强度。0 表示完全躺平，1 表示与触发时一样醒目。</p></section>
+    <section><h2>peakRing：峰值描边</h2>
+      <p>给峰值条描一圈细边。开启后组件会自动给条形区留出空隙，避免描边被裁掉。</p></section>
+    <section><h2>quantScale / quantOpacity</h2>
+      <p>把连续的缩放与透明度量化成整数再比较，只有跨过一级才写一次样式。</p>
+      <p>调大更细腻但写入更频繁，调小更省但可能出现台阶感。</p></section>
+    <section><h2>layer：合成层策略</h2>
+      <p><code>container</code> 只提升轨道一个图层，条目多时最省内存；<code>bar</code> 每根条形一个图层，条目少时最顺滑。</p></section>
+  </main>
+</div>
+
+<script src="../dist/scrollpeak.min.js"></script>
+<script>
+/* 参数表：k=键名 label=显示名 type/min/max/step */
+var SPEC = {
+  'grp-peak': [
+    { k: 'peakGain', label: 'peakGain', min: 1, max: 12, step: 0.1 },
+    { k: 'peakGainY', label: 'peakGainY', min: 0, max: 3, step: 0.05 },
+    { k: 'peakGainYIdle', label: 'peakGainYIdle（保底加粗）', min: 0, max: 3, step: 0.05 },
+    { k: 'sigma', label: 'sigma（基准）', min: 0.4, max: 6, step: 0.1 },
+    { k: 'sigmaIdle', label: 'sigmaIdle（横向·闲置）', min: 0.4, max: 6, step: 0.1 },
+    { k: 'sigmaActive', label: 'sigmaActive（横向·触发）', min: 0.4, max: 6, step: 0.1 },
+    { k: 'sigmaYIdle', label: 'sigmaYIdle（纵向·闲置）', min: 0.4, max: 6, step: 0.1 },
+    { k: 'sigmaYActive', label: 'sigmaYActive（纵向·触发）', min: 0.4, max: 6, step: 0.1 },
+    { k: 'idle', label: 'idle', min: 0, max: 1, step: 0.02 },
+    { k: 'windowSigma', label: 'windowSigma', min: 1, max: 8, step: 0.5 },
+    { k: 'damp', label: 'damp', min: 0.05, max: 0.6, step: 0.01 }
+  ],
+  'grp-geo': [
+    { k: 'hitWidth', label: 'hitWidth', min: 60, max: 320, step: 2 },
+    { k: 'stageWidth', label: 'stageWidth', min: 30, max: 200, step: 2 },
+    { k: 'barWidth', label: 'barWidth', min: 2, max: 20, step: 1 },
+    { k: 'barHeight', label: 'barHeight', min: 1, max: 10, step: 1 },
+    { k: 'barGap', label: 'barGap', min: 2, max: 20, step: 1 },
+    { k: 'padY', label: 'padY', min: 0, max: 80, step: 2 },
+    { k: 'edgeGap', label: 'edgeGap', min: 0, max: 60, step: 1 }
+  ],
+  'grp-opacity': [
+    { k: 'baseOpacityIdle', label: 'baseOpacityIdle', min: 0, max: 1, step: 0.02 },
+    { k: 'baseOpacityActive', label: 'baseOpacityActive', min: 0, max: 1, step: 0.02 },
+    { k: 'peakOpacityIdle', label: 'peakOpacityIdle', min: 0, max: 1, step: 0.02 },
+    { k: 'peakOpacityActive', label: 'peakOpacityActive', min: 0, max: 1, step: 0.02 }
+  ],
+  'grp-ring': [
+    { k: 'peakRing', label: 'peakRing', type: 'check' },
+    { k: 'peakRingWidth', label: 'peakRingWidth', min: 1, max: 4, step: 1 },
+    { k: 'peakRingGap', label: 'peakRingGap', min: 0, max: 6, step: 1 },
+    { k: 'peakGlow', label: 'peakGlow', type: 'check' }
+  ],
+  'grp-ux': [
+    { k: 'clickToScroll', label: 'clickToScroll', type: 'check' },
+    { k: 'showPeek', label: 'showPeek', type: 'check' },
+    { k: 'peekGap', label: 'peekGap', min: 0, max: 80, step: 2 },
+    { k: 'keyboard', label: 'keyboard（方向键）', type: 'check' },
+    { k: 'theme', label: 'theme', type: 'select', options: ['auto', 'light', 'dark'] },
+    { k: 'layer', label: 'layer', type: 'select', options: ['container', 'bar', 'none'] }
+  ],
+  'grp-perf': [
+    { k: 'quantScale', label: 'quantScale', min: 32, max: 1024, step: 32 },
+    { k: 'quantOpacity', label: 'quantOpacity', min: 16, max: 512, step: 16 }
+  ]
+};
+
+var CONTROLS = {};
+var sp = Scrollpeak.init({ peakStyle: 'plain' });
+var DEFAULTS = sp.o;
+
+function build() {
+  Object.keys(SPEC).forEach(function (groupId) {
+    var host = document.getElementById(groupId);
+    SPEC[groupId].forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'row';
+      var label = document.createElement('label');
+      label.textContent = item.label;
+      row.appendChild(label);
+
+      var input;
+      if (item.type === 'check') {
+        input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = !!DEFAULTS[item.k];
+      } else if (item.type === 'select') {
+        input = document.createElement('select');
+        item.options.forEach(function (opt) {
+          var o = document.createElement('option');
+          o.value = opt; o.textContent = opt;
+          input.appendChild(o);
+        });
+        input.value = DEFAULTS[item.k];
+      } else {
+        input = document.createElement('input');
+        input.type = 'range';
+        input.min = item.min; input.max = item.max; input.step = item.step;
+        input.value = DEFAULTS[item.k];
+        var out = document.createElement('output');
+        out.textContent = DEFAULTS[item.k];
+        row.appendChild(input);
+        row.appendChild(out);
+        input.addEventListener('input', function () {
+          out.textContent = input.value;
+          apply(item.k, parseFloat(input.value));
+        });
+        host.appendChild(row);
+        CONTROLS[item.k] = { input: input, out: out };
+        return;
+      }
+
+      input.addEventListener('change', function () {
+        var v = input.type === 'checkbox' ? input.checked : input.value;
+        apply(item.k, v);
+      });
+      row.appendChild(input);
+      host.appendChild(row);
+      CONTROLS[item.k] = { input: input };
+    });
+  });
+}
+
+function apply(key, value) {
+  var patch = {};
+  patch[key] = value;
+  /* peakStyle 走预设，setOptions 会整体重算参数 */
+  sp.setOptions(patch);
+  syncControls();
+  dump();
+}
+
+/* 换预设后，被预设影响的控件要跟着回填 */
+function syncControls() {
+  Object.keys(CONTROLS).forEach(function (k) {
+    var c = CONTROLS[k];
+    var v = sp.o[k];
+    if (c.input.type === 'checkbox') c.input.checked = !!v;
+    else c.input.value = v;
+    if (c.out) c.out.textContent = typeof v === 'number' ? +v.toFixed(3) : v;
+  });
+  document.querySelector('[data-k=peakStyle]').value = sp.o.peakStyle;
+}
+
+function dump() {
+  var keys = [];
+  Object.keys(SPEC).forEach(function (g) {
+    SPEC[g].forEach(function (i) { keys.push(i.k); });
+  });
+  var out = {};
+  keys.forEach(function (k) { out[k] = sp.o[k]; });
+  document.getElementById('json').value = 'Scrollpeak.init(' + JSON.stringify(out, null, 2) + ');';
+}
+
+document.getElementById('btnCopy').addEventListener('click', function () {
+  var ta = document.getElementById('json');
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) { /* 忽略：手动复制即可 */ }
+});
+document.getElementById('btnReset').addEventListener('click', function () {
+  sp.reset();
+  syncControls();
+  dump();
+});
+document.querySelector('[data-k=peakStyle]').addEventListener('change', function (e) {
+  apply('peakStyle', e.target.value);
+});
+
+build();
+syncControls();
+dump();
+
+/* 实时状态 */
+var stateEl = document.getElementById('state');
+setInterval(function () {
+  var s = sp.state;
+  stateEl.innerHTML =
+    '触发：<b>' + (s.engaged ? '是' : '否') + '</b><br>' +
+    '当前条目：<b>' + (s.title || '—') + '</b><br>' +
+    '目标/当前：<b>' + s.target.toFixed(3) + ' / ' + s.current.toFixed(3) + '</b><br>' +
+    '强度：<b>' + s.intensity.toFixed(3) + '</b><br>' +
+    '主题：<b>' + (s.dark ? '深色' : '浅色') + '</b><br>' +
+    '条目数：<b>' + s.count + '</b>';
+}, 250);
+</script>
+</body>
+</html>
