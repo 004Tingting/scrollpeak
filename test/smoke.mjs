@@ -118,7 +118,7 @@ ok('README 的本地链接与图片都存在', () => {
 });
 
 /* 10. 发布必需的元数据别缺 */
-ok('package.json 发布元数据齐全', () => {
+ok('package.json 元数据齐全', () => {
   assert.equal(pkg.license, 'MIT');
   assert.ok(pkg.repository && pkg.repository.url, '缺少 repository');
   assert.ok(pkg.homepage, '缺少 homepage');
@@ -127,17 +127,27 @@ ok('package.json 发布元数据齐全', () => {
   assert.ok(existsSync(join(root, 'dist', 'scrollpeak.min.js')), '缺少压缩产物');
 });
 
-/* 11. README 引用的图片必须被打进 npm 包（否则 npm 页面上裂图） */
-ok('assets 已包含在 npm files 字段里', () => {
+/* 11. README 引用的图片必须真的在仓库里（GitHub 上是相对路径，裂图很难发现） */
+ok('README 的图片都在仓库内', () => {
   const readme = readFileSync(join(root, 'README.md'), 'utf8');
   const imgs = [...readme.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
     .map((m) => m[1].split('#')[0].trim())
     .filter((t) => !/^[a-z]+:/i.test(t));
-  const bad = imgs.filter((p) => {
-    const top = p.split('/')[0];
-    return !pkg.files.includes(top) && !pkg.files.includes(p);
-  });
-  assert.deepEqual(bad, [], '这些图片不在 package.json 的 files 里：' + bad.join(', '));
+  const missing = [...new Set(imgs)].filter((p) => !existsSync(join(root, p)));
+  assert.deepEqual(missing, [], 'README 引用了不存在的图片：' + missing.join(', '));
+});
+
+/* 12. 本项目不发布 npm：不该出现指向 npm registry 的死链 */
+ok('没有指向 npm 注册表的链接', () => {
+  const files = ['README.md', 'CONTRIBUTING.md', 'ROADMAP.md', 'CHANGELOG.md'];
+  const bad = [];
+  for (const f of files) {
+    const text = readFileSync(join(root, f), 'utf8');
+    for (const m of text.matchAll(/https?:\/\/[^\s)"'<>]*npmjs\.com[^\s)"'<>]*/g)) {
+      bad.push(f + ': ' + m[0]);
+    }
+  }
+  assert.deepEqual(bad, [], '出现指向 npmjs.com 的死链：\n  ' + bad.join('\n  '));
 });
 
 console.log(`\n全部通过（${passed} 项）。\n`);

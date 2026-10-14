@@ -1,12 +1,14 @@
 /**
  * 构建脚本：把 src/scrollpeak.js 产出四种分发格式。
  *   dist/scrollpeak.js       IIFE（<script> 直接用，未压缩，便于调试）
- *   dist/scrollpeak.min.js   IIFE（压缩，CDN / unpkg 入口）
+ *   dist/scrollpeak.min.js   IIFE（压缩，CDN 入口）
  *   dist/scrollpeak.esm.js   ESM（import）
  *   dist/scrollpeak.cjs      CommonJS（require）
  *
+ * 产物是**提交进仓库**的：jsDelivr 直接按 Git 标签读取，本项目不走 npm。
+ *
  * 用法：
- *   npm i && npm run build
+ *   npm install && npm run build
  * 离线环境可指定现成的 esbuild 可执行文件：
  *   ESBUILD_BIN=/path/to/esbuild node build.mjs
  */

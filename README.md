@@ -1,8 +1,8 @@
 # Scrollpeak
 
 [![CI](https://github.com/004Tingting/scrollpeak/actions/workflows/ci.yml/badge.svg)](https://github.com/004Tingting/scrollpeak/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/scrollpeak.svg)](https://www.npmjs.com/package/scrollpeak)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![jsDelivr](https://img.shields.io/jsdelivr/gh/hy/004Tingting/scrollpeak?label=jsDelivr)](https://cdn.jsdelivr.net/gh/004Tingting/scrollpeak@v1.0.0/dist/scrollpeak.min.js)
 
 > 一条贴在页面右侧的**单峰滑动指示条**：峰值跟随鼠标或滚动进度，逐帧只写 `transform` 与 `opacity`。
 > 零依赖、单文件、可 CDN 直引。
@@ -18,6 +18,7 @@
 | **格式** | IIFE · ESM · CommonJS |
 | **浏览器** | Chrome / Edge 88+、Safari 14+、Firefox 78+ |
 | **许可** | MIT |
+| **分发** | Git 仓库直引（jsDelivr / 自托管），不走 npm |
 
 <br>
 
@@ -68,7 +69,12 @@ Scrollpeak.init({ peakStyle: 'bold' });     // bold  —— 峰值加粗 + 描�
 
 ## 快速开始
 
-### 1. `<script>` 直接引（推荐）
+> 本项目**不发布到 npm**，通过 Git 仓库分发。
+> 下面四种用法覆盖 CDN 直引、本地文件、打包器与 CommonJS。
+
+### 1. CDN 直接引（推荐）
+
+jsDelivr 直接读 GitHub 仓库，**不需要任何注册或构建**：
 
 ```html
 <main data-scrollpeak>
@@ -77,25 +83,41 @@ Scrollpeak.init({ peakStyle: 'bold' });     // bold  —— 峰值加粗 + 描�
   <section><h2>第三章</h2> …</section>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/scrollpeak/dist/scrollpeak.min.js"></script>
+<!-- 锁定版本号（推荐，避免上游更新把线上改坏） -->
+<script src="https://cdn.jsdelivr.net/gh/004Tingting/scrollpeak@v1.0.0/dist/scrollpeak.min.js"></script>
 <script>
   Scrollpeak.init();                 // 默认 plain
 </script>
 ```
 
+也可以始终跟最新版（URL 里不带 `@版本`），但生产环境建议锁版本。
+
 ### 2. 下载到本地
 
+从仓库的 [`dist/`](dist) 目录取 `scrollpeak.min.js`，放到自己的静态目录：
+
 ```html
-<script src="./dist/scrollpeak.min.js"></script>
+<script src="./scrollpeak.min.js"></script>
 ```
 
+`examples/single-file.html` 是**组件 + 样式 + 演示页全内联**的成品，
+双击即可打开，也可以直接拿它当模板改。
+
 ### 3. ESM / 打包器
+
+用 Git 地址安装（npm 支持的 GitHub 简写，`#v1.0.0` 可锁定版本）：
+
+```bash
+npm i github:004Tingting/scrollpeak#v1.0.0
+```
 
 ```js
 import Scrollpeak from 'scrollpeak';
 
 const sp = Scrollpeak.init({ peakStyle: 'bold' });
 ```
+
+或者直接把 [`src/scrollpeak.js`](src/scrollpeak.js) 复制进项目（它是零依赖的纯 ESM）。
 
 ### 4. CommonJS
 
@@ -489,39 +511,45 @@ node bench/run.mjs   # 性能对比（需要本机 Chrome；用 CHROME_BIN 指�
 | 文件 | 格式 | 用途 |
 |---|---|---|
 | `dist/scrollpeak.js` | IIFE，未压缩 | `<script>` 直接引，便于调试 |
-| `dist/scrollpeak.min.js` | IIFE，压缩 | CDN / unpkg / jsDelivr 入口 |
+| `dist/scrollpeak.min.js` | IIFE，压缩 | CDN（jsDelivr / 自托管）入口 |
 | `dist/scrollpeak.esm.js` | ESM | `import` |
 | `dist/scrollpeak.cjs` | CommonJS | `require` |
 
-发布流程：
+### 发版流程
+
+本项目**不走 npm**，发版 = 打一个 Git 标签。jsDelivr 会按标签提供不可变 URL。
 
 ```bash
-# 1. 确认 dist 是最新的（dist/ 是提交进仓库的，忘了构建会发出旧版本）
+# 1. 确认 dist 是最新的（dist/ 是提交进仓库的，忘了构建会让 CDN 上是旧版本）
 npm run build && npm test
 
 # 2. 更新 CHANGELOG.md 与 package.json 的 version
 
 # 3. 提交并打标签
-git add -A && git commit -m "release: v1.0.0"
-git tag v1.0.0 && git push origin main --tags
-
-# 4. 发布到 npm（需要已登录）
-npm publish --access public
+git add -A && git commit -m "release: v1.0.1"
+git tag v1.0.1 && git push origin main --tags
 ```
 
-打完标签后，jsDelivr / unpkg 就能按版本号引用（国内访问 jsDelivr 通常更稳）：
+打完标签后即可按版本号引用：
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/scrollpeak@1/dist/scrollpeak.min.js"></script>
-<script src="https://unpkg.com/scrollpeak@1/dist/scrollpeak.min.js"></script>
+<!-- 锁定版本（推荐） -->
+<script src="https://cdn.jsdelivr.net/gh/004Tingting/scrollpeak@v1.0.1/dist/scrollpeak.min.js"></script>
+
+<!-- 跟随最新标签 -->
+<script src="https://cdn.jsdelivr.net/gh/004Tingting/scrollpeak/dist/scrollpeak.min.js"></script>
 ```
 
-**发布前自查**（改源码时尤其注意后两条）：
+> **`package.json` 里的 `version` 与 Git 标签要保持一致**，但两者是独立维护的——
+> 没有 npm，就不会有人替你校验。改 `version` 时记得同步打标签。
 
-- [ ] `npm run check && npm run build && npm test` 全绿
+**发版前自查**（改源码时尤其注意后两条）：
+
+- [ ] `npm run check && npm run build && npm test` 全绿（CI 也会跑）
 - [ ] `examples/index.html` 四种示例都正常（含切换明暗、切预设）
 - [ ] 新增参数已写进 README 参数表（`npm test` 会强制检查）
 - [ ] `dist/` 与 `examples/single-file.html` 已随源码一起提交
+- [ ] `package.json` 的 `version` 与要打的标签一致
 
 ---
 

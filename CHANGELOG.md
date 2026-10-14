@@ -2,6 +2,11 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+> **分发方式**：本项目**不发布到 npm**，通过 Git 仓库分发。
+> CDN 走 jsDelivr 的 GitHub 通道（`cdn.jsdelivr.net/gh/004Tingting/scrollpeak@<tag>/...`），
+> 打包器可用 `npm i github:004Tingting/scrollpeak#<tag>`。
+> 因此**发版 = 打 Git 标签**，`package.json` 的 `version` 与标签需手动保持一致。
+
 ## [1.0.0] — 首个公开版本
 
 由早期的 `codex-rail` 单文件组件重写而来，更名 **Scrollpeak** 并整理为可发布的仓库结构。
