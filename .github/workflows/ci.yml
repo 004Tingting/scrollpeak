@@ -6,6 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 最小权限：仓库内容是提交进版本库的，CI 只需要读
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,15 +19,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
 
       - name: 安装依赖
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
 
       - name: 语法检查
         run: npm run check
 
-      - name: 构建 dist
-        run: npm run build
-
       - name: 冒烟测试
         run: npm test
+
+      - name: 构建
+        run: npm run build
+
+      # dist/ 与 single-file.html 是提交进仓库的（供 CDN 直接引用）。
+      # 源码改了却忘了重新构建，就会导致「仓库里的产物是旧版本」——
+      # 这是本项目最容易犯的错，所以在这里卡住。
+      - name: 校验提交的产物与源码一致
+        run: |
+          if ! git diff --quiet -- dist examples/single-file.html; then
+            echo "::error::dist/ 或 examples/single-file.html 与源码不一致。"
+            echo "请在本地执行 npm run build 并把产物一起提交。"
+            echo
+            git --no-pager diff --stat -- dist examples/single-file.html
+            exit 1
+          fi
+          echo "产物与源码一致。"

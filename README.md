@@ -1,5 +1,9 @@
 # Scrollpeak
 
+[![CI](https://github.com/004Tingting/scrollpeak/actions/workflows/ci.yml/badge.svg)](https://github.com/004Tingting/scrollpeak/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/scrollpeak.svg)](https://www.npmjs.com/package/scrollpeak)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 > 一条贴在页面右侧的**单峰滑动指示条**：峰值跟随鼠标或滚动进度，逐帧只写 `transform` 与 `opacity`。
 > 零依赖、单文件、可 CDN 直引。
 
